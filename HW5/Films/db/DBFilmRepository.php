@@ -26,31 +26,17 @@ class DBFilmRepository implements FilmRepositoryInterface
     /**
      * @inheritDoc
      */
-    public function insert(string $data)
-    {
-        // TODO: Implement insert() method.
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function delete(int $id)
     {
-        $sql = <<< 'SQL'
-        DELETE FROM films
-        WHERE FilmId = ?
-        SQL;
+        $film = new Film();
+        $film->load($id);
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id ?? 0]);
-
+        $film->delete();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function select(...$id)
     {
+
         $id = $id[0];
         $sql = <<< 'SQL'
         SELECT * FROM films WHERE FilmId = ?
@@ -64,18 +50,11 @@ class DBFilmRepository implements FilmRepositoryInterface
 
     public function add_film(array $film_data)
     {
-        $genre_id = $this->get_genre($film_data['genre']);
+        $film = new Film();
 
-        $sql = <<< 'SQL'
-        INSERT INTO films (Name, GenreId, Duration, Year, Cover, image_type)
-        VALUES (?, ?, ?, ?, ?, ?)
-        SQL;
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$film_data['title'], $genre_id, $film_data['duration'],
-                        $film_data['year'], $film_data['image_data'], $film_data['image_type']]);
-
-
+        $film->__set("Name", $film_data["title"]);
+        $this->set_film_attributes($film, $film_data);
+        $film->save();
     }
 
     public function get_movies(string $first_letter = null)
@@ -143,7 +122,22 @@ class DBFilmRepository implements FilmRepositoryInterface
         return $genres;
     }
 
-    public function get_genre(string $genre_name){
+    /**
+     * Sets attributes that correspond to database columns for the Film.
+     * @param Film $film
+     * @param array $film_data
+     */
+    private function set_film_attributes(Film $film, array $film_data){
+        $film->__set("Name",$film_data["title"]);
+        $film->__set("GenreId", $this->get_genre_id($film_data["genre"]));
+        $film->__set("Duration", $film_data["duration"]);
+        $film->__set("Year",$film_data["year"]);
+        $film->__set("Cover", $film_data["image_data"]);
+        $film->__set("image_type", $film_data["image_type"]);
+
+    }
+
+    public function get_genre_id(string $genre_name){
         $sql = <<< 'SQL'
         SELECT GenreId FROM genre WHERE Name = ?
         SQL;

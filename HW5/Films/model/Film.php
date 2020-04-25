@@ -2,7 +2,8 @@
 
 namespace model;
 
-class Film extends AbstractModel {
+class Film extends AbstractDBModel
+{
     private $id;
     private $title;
     private $duration;
@@ -138,6 +139,23 @@ class Film extends AbstractModel {
             '"'  . $this->duration .'"'.  "," .'"'. $this->headline.'"';
 
         return $str;
+    }
+
+    public function getPrimaryKeyColumn()
+    {
+        return "FilmId";
+    }
+
+    public function getTable()
+    {
+        return "films";
+    }
+
+    public function getColumns()
+    {
+        return ["Name", "GenreId",
+               "Duration", "Year","Cover",
+                "image_type"];
     }
 }
 

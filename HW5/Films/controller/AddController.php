@@ -11,13 +11,21 @@ use view\HeaderView;
 class AddController extends AbstractController {
 
     private $errorMessage;
+    private $error_set;
     private $form_data;
     private $film_repository;
+    private $film_form_parameters;
+    private $missing_params;
+    private $film_data_valid;
 
     public function __construct($data = null, \FilmRepositoryInterface $film_repository) {;
         $this->form_data = $data;
         $this->film_repository = $film_repository;
         $this->errorMessage='';
+        $this->film_form_parameters = ['title', 'year', 'duration', 'genre'];
+        $this->missing_params = [];
+        $this->film_data_valid = true;
+        $this->error_set = false;
     }
 
     protected function doJob() {
@@ -28,63 +36,77 @@ class AddController extends AbstractController {
         }
     }
 
+    /*
+     * Validates data, checks for missing parameters and sends
+     * the verified data to the repository to save.
+     */
     public function processData(array $data) {
 
         //check for missing parameters
-        $expected_params = ['title', 'year', 'duration', 'genre'];
-        $missing_params = array_diff($expected_params, array_keys($data));
+        $this->check_parameters($data);
+        if(empty($this->missing_params) || !isset($_FILES['headline'])){
 
-        if(empty($missing_params) || !isset($_FILES['headline'])){
+            //Validate data and set flag
+            $this->validate_data($data);
 
-            //validate data
-            $valid = True;
-            $data_valid = $this->validate_data($data);
-            foreach($data_valid as $valid){
-                if ($valid !== 1){
-                    $valid = False;
-                }
-            }
-            if ($valid && isset($_FILES['headline'])){
-                //add backslash to any comma added in the title and replace old value
-                $title = $data['title'];
-                $title = str_replace(',', "\,", $title);
-                $data['title'] = $title;
-
-                //save image and add image url to data
-                $img_data = file_get_contents($_FILES['headline']['tmp_name']);
-                $image_url = $_FILES['headline']['name'];
-
-                $data['headline'] = $image_url;
-                $data['image_data'] = $img_data;
-
-                //save image type to data as well
-                $image_type = explode('/',mime_content_type($_FILES['headline']['tmp_name']))[1];
-                $data['image_type'] = $image_type;
-
-                //send processed data to film repository for saving
-                $this->film_repository->add_film($data);
-
-                $this->show_html(false);
+            if ($this->film_data_valid && isset($_FILES['headline'])){
+                $prepared_data = $this->prepare_film_data($data);
+                $this->film_repository->add_film($prepared_data);
             } else {
                 $this->errorMessage = 'Invalid parameters.';
-                $this->show_html(true);
+                $this->error_set = true;
             }
         } else {
-            $this->errorMessage .= "Some parameters have not been given: ";
-            foreach ($missing_params as $missing_param){
-                $this->errorMessage .=  $missing_param;
+            $this->errorMessage .= "Missing parameters. ";
+            foreach ($this->missing_params as $missing_param) {
+                $this->errorMessage .= $missing_param;
             }
-            $this->show_html(true);
+            $this->error_set = true;
         }
+
+        // Show view
+        $this->show_html($this->error_set);
     }
 
-    private function handle_image_upload(array $file_data){
-        $this->film_repository->save_image($file_data);
+    /**
+     * Checks if any of the parameters in the form are missing.
+     * Return true if all parameters are present.
+     * Return false if any are missing and set $missing_params array.
+     * @param array $form_data
+     * @return bool
+     */
+    private function check_parameters(array $form_data): bool{
+        $this->missing_params = array_diff($this->film_form_parameters, array_keys($form_data));
+        return empty($this->missing_params);
+    }
+
+    /**
+     * Adds all data necessary for the persistence layer to
+     * successfully save the film.
+     * @param array $film_data
+     * @return array
+     */
+    private function prepare_film_data(array $film_data):array{
+        //add backslash to any comma added in the title and replace old value
+        $title = $film_data['title'];
+        $title = str_replace(',', "\,", $title);
+        $film_data['title'] = $title;
+
+        //save image and add image url to data
+        $img_data = file_get_contents($_FILES['headline']['tmp_name']);
+        $image_url = $_FILES['headline']['name'];
+        $film_data['headline'] = $image_url;
+        $film_data['image_data'] = $img_data;
+
+        //save image type to data as well
+        $image_type = explode('/',mime_content_type($_FILES['headline']['tmp_name']))[1];
+        $film_data['image_type'] = $image_type;
+
+        return $film_data;
     }
 
     private function show_html(bool $error = false){
         $header_view = new HeaderView("Add movies", true);
-        var_dump($this->film_repository->get_genres());
         $form_view = new FormView($this->film_repository->get_genres());
         $error_view = new ErrorView($this->errorMessage);
         $movie_table = new FilmTableView($this->film_repository->get_movies());
@@ -97,6 +119,15 @@ class AddController extends AbstractController {
         $movie_table->generateHTML();
     }
 
+    /**
+     * Validates data using regex.
+     * Returns array containing keys that are parameter names
+     * and values 0 or 1.
+     * Value is 1 if the parameter is valid, and 0 if it is not.
+     * Also sets the $film_data_valid flag to the appropriate value.
+     * @param array $data
+     * @return array
+     */
     private function validate_data(array $data): array{
         $data_valid = [];
 
@@ -104,10 +135,14 @@ class AddController extends AbstractController {
         $data_valid['year'] = preg_match('/^\d{4}$/', $data['year']);
 
         //check if genre is only letters
-        $data_valid['genre'] = preg_match('/^"[a-zA-Z]{3,30}"$/',  $data['genre']);
+        $data_valid['genre'] = preg_match('/^[a-zA-Z]{3,30}$/',  $data['genre']);
 
         //check if duration is only digits
         $data_valid['duration'] = preg_match('/^\d{1,4}/', $data['duration']);
+
+        if (in_array(0, $data_valid)){
+            $this->film_data_valid = false;
+        }
 
         return $data_valid;
     }
