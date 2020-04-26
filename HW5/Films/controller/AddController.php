@@ -105,9 +105,33 @@ class AddController extends AbstractController {
         return $film_data;
     }
 
+    /**
+     * Returns an array of genre objects with
+     * attributes set so that the views can
+     * interact with them.
+     * @return array Containing Genre objects
+     */
+    private function get_genres(): array{
+        //get genres for the form view - this returns the Genre model object
+        //we need to populate it with correct attribute values
+        //so that the views can interact with it without them knowing
+        //anything about the database model
+        $genres = $this->film_repository->get_genres();
+        $genres_with_attrs = [];
+        foreach($genres as $genre){
+            $genre->setName($genre->__get("Name"));
+            $genre->setId($genre->getPrimaryKey());
+
+            $genres_with_attrs[] = $genre;
+        }
+
+        return $genres_with_attrs;
+    }
+
     private function show_html(bool $error = false){
+
         $header_view = new HeaderView("Add movies", true);
-        $form_view = new FormView($this->film_repository->get_genres());
+        $form_view = new FormView($this->get_genres());
         $error_view = new ErrorView($this->errorMessage);
         $movie_table = new FilmTableView($this->film_repository->get_movies());
 

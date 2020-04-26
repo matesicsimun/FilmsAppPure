@@ -16,6 +16,7 @@ class FilmTitleView extends AbstractView {
 
     public function generateHTML() {
         $html_collection = new \HTMLCollection();
+
         //foreach movie
         foreach($this->collection as $film){
 
@@ -46,8 +47,6 @@ class FilmTitleView extends AbstractView {
         }
 
         echo $html_collection->get_html_collection();
-
-
 
     }
 

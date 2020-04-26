@@ -39,8 +39,8 @@ class FormView extends AbstractView {
 
         foreach($this->genres as $genre){
             $option = new \HTMLOptionElement();
-            $option->add_attribute(new \HTMLAttribute("value", $genre));
-            $option->add_child(new \HTMLTextNode($genre));
+            $option->add_attribute(new \HTMLAttribute("value", $genre->getName()));
+            $option->add_child(new \HTMLTextNode($genre->getName()));
 
             $genre_select->add_child($option);
         }

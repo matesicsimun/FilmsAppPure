@@ -4,14 +4,41 @@ namespace model;
 
 class Film extends AbstractDBModel
 {
+    /**
+     * Primary key
+     * @var int
+     */
     private $id;
-    private $title;
-    private $duration;
-    private $genre;
-    private $year;
-    private $headline;
-    private $headline_data;
 
+    /**
+     * Film title
+     * @var string
+     */
+    private $title;
+
+    /**
+     * Film duration in minutes
+     * @var int
+     */
+    private $duration;
+
+    /**
+     * Film genre as string
+     * @var string
+     */
+    private $genre;
+
+    /**
+     * Film year
+     * @var int
+     */
+    private $year;
+
+    /**
+     * Cover image URL - not used when persisting to database.
+     * @var string
+     */
+    private $headline;
 
     /**
      * @return mixed
@@ -29,13 +56,6 @@ class Film extends AbstractDBModel
         $this->id = $id;
     }
 
-    public function setHeadlineData(string $headline_data){
-        $this->headline_data = $headline_data;
-    }
-
-    public function getHeadlineData(): string{
-        return $this->headline_data;
-    }
     /**
      * @return mixed
      */
@@ -151,6 +171,10 @@ class Film extends AbstractDBModel
         return "films";
     }
 
+    /**
+     * The columns in the database.
+     * @return array
+     */
     public function getColumns()
     {
         return ["Name", "GenreId",

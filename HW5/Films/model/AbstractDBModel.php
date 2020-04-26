@@ -117,7 +117,6 @@ abstract class AbstractDBModel implements DBModel{
     public function loadAll($where = null) {
 
         $sql = "SELECT * FROM " . $this->getTable() . " " .$where;
-
         $statement = DBPool::getInstance()->prepare($sql);
         $statement->execute();
 
